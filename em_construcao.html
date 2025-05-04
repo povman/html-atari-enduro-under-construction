@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Em Construção - Corrida Retro</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: white;
+        }
+
+        .construction-container {
+            position: absolute;
+            text-align: center;
+            z-index: 100;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff0;
+        }
+
+        h1 {
+            color: #ff0;
+            text-transform: uppercase;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="construction-container">
+            <h1>Página em Construção</h1>
+            <p>Estamos trabalhando em algo incrível!</p>
+            <p>Enquanto isso, aproveite esta animação retro inspirada no clássico Enduro da Atari</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Ajusta o canvas para o tamanho da tela
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Configurações do jogo
+        const roadWidth = 1500;
+        const segmentLength = 200;
+        // Configurações iniciais
+        let playerX = 0; // Centralizado inicialmente
+        let playerZ = 0;
+        let speed = 60;
+        const maxSpeed = 200;
+        let score = 0;
+
+        // Cores para diferentes ambientes
+        const environments = [
+            { name: 'day', roadColor: '#007000', rumbleColor: '#FFFFFF', bgColor: '#5050FF', mountainColor: '#FF7700' },
+            { name: 'night', roadColor: '#003000', rumbleColor: '#FFFFFF', bgColor: '#000060', mountainColor: '#442200' },
+            { name: 'sunset', roadColor: '#006000', rumbleColor: '#FFFFFF', bgColor: '#4040A0', mountainColor: '#FF5500' },
+            { name: 'snow', roadColor: '#CCCCCC', rumbleColor: '#FFFFFF', bgColor: '#8080FF', mountainColor: '#FFFFFF' }
+        ];
+
+        let currentEnv = 0;
+        let envChangeTimer = 0;
+        const envChangeDuration = 500;
+
+        // Carros adversários
+        const enemyCars = [];
+        const enemyCarWidth = 40;
+        const enemyCarHeight = 20;
+
+        // Função para gerar carros adversários aleatoriamente
+    function generateEnemyCar() {
+        const laneOffsets = [-0.3, 0, 0.3]; // Deslocamentos laterais da pista
+        const lane = laneOffsets[Math.floor(Math.random() * laneOffsets.length)];
+        const enemyCar = {
+            lane,
+            z: 0, // Começa longe (no horizonte)
+            type: Math.floor(Math.random() * 3),
+        };
+        enemyCars.push(enemyCar);
+    }
+
+
+// Função genérica para desenhar qualquer carro (player ou inimigo)
+function drawCar(x, y, width, height, color) {
+    // Corpo principal do carro
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+
+    // Aerofólio (mesmo para todos)
+    ctx.fillRect(x - 10, y - 15, width + 20, 7); // aerofólio
+    ctx.fillRect(x + width/2 - 7, y - 10, 15, 10); // coluna central
+
+    // Rodas (mesmo estilo)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(x - 15, y + 3, 12, 15); // Roda esquerda
+    ctx.fillRect(x + width + 3, y + 3, 12, 15); // Roda direita
+}
+
+function drawCarEnemy(x, y, width, height, color) {
+    // Corpo principal do carro
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+
+    // Aerofólio (mesmo para todos)
+    ctx.fillRect(x - 10, y - 15, width + 20, 7); // aerofólio
+    ctx.fillRect(x + width/2 - 7, y - 10, 15, 10); // coluna central
+
+    // Rodas (mesmo estilo)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(x - 15, y + 3, 12, 15); // Roda esquerda
+    ctx.fillRect(x + width + 3, y + 3, 12, 15); // Roda direita
+}
+
+// Função do carro do player (agora usando a genérica)
+function drawPlayerCar() {
+    const carWidth = 40;
+    const carHeight = 20;
+    const carX = canvas.width / 2 - carWidth / 2 + playerX * 100;
+    const carY = canvas.height - carHeight - 50;
+
+    drawCar(carX, carY, carWidth, carHeight, '#FFFFFF'); // Player branco
+}
+
+
+
+        // Atualiza a posição dos carros adversários
+    function updateEnemyCars() {
+        for (let i = enemyCars.length - 1; i >= 0; i--) {
+            enemyCars[i].z += speed * 0.05; // Aumenta o z para vir em direção ao jogador
+
+            // Remover se passou do jogador (z > 2000)
+            if (enemyCars[i].z > 2000) {
+                enemyCars.splice(i, 1);
+                score += 5; // Pontuação por evitar
+            }
+        }
+    }
+
+ function drawEnemyCars() {
+        enemyCars.forEach(car => {
+            const z = car.z;
+            // Quanto maior o z, mais perto do jogador (menor a perspectiva)
+            const perspective = 1 - (z / 5000);
+            const carWidth = enemyCarWidth / perspective;
+            const carHeight = enemyCarHeight / perspective;
+            const centerX = canvas.width / 2 + car.lane * 100; // Posição lateral fixa
+
+            // Posição Y diminui conforme o carro se aproxima (vem de cima para baixo)
+            const screenY = canvas.height * 0.5 + (z / 2000) * (canvas.height * 0.7);
+
+            if (screenY < canvas.height && screenY > canvas.height * 0.2) {
+                ctx.fillStyle = car.type === 0 ? '#FF0000' : car.type === 1 ? '#00FF00' : '#0000FF';
+                ctx.fillRect(centerX - carWidth / 2, screenY - carHeight / 2, carWidth, carHeight);
+
+                // Colisão simples com jogador
+                const playerY = canvas.height - 60;
+                const playerCenterX = canvas.width / 2 + playerX * 100;
+                if (
+                    screenY + carHeight / 2 > playerY &&
+                    screenY - carHeight / 2 < playerY + 20 &&
+                    Math.abs(centerX - playerCenterX) < (carWidth + 40) / 2
+                ) {
+                    score -= 5;
+                    car.z = 3000; // Move para longe para ser removido
+                }
+            }
+        });
+    }
+
+
+        // Redesenha o cenário
+        function drawRoad(env) {
+            ctx.fillStyle = env.roadColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = env.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height / 2);
+
+            ctx.font = "bold 40px 'Courier New', monospace";
+            ctx.fillStyle = "#FFFF00";
+            ctx.textAlign = "center";
+            ctx.fillText("UNDER CONSTRUCTION", canvas.width/2, canvas.height/3);
+
+            ctx.fillStyle = env.mountainColor;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width * 0.1, canvas.height / 2);
+            ctx.lineTo(canvas.width * 0.3, canvas.height / 3);
+            ctx.lineTo(canvas.width * 0.5, canvas.height / 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(canvas.width * 0.6, canvas.height / 2);
+            ctx.lineTo(canvas.width * 0.8, canvas.height / 3);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#303030';
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2 - 150, canvas.height);
+            ctx.lineTo(canvas.width / 2 + 150, canvas.height);
+            ctx.lineTo(canvas.width / 2 + 50, canvas.height / 2);
+            ctx.lineTo(canvas.width / 2 - 50, canvas.height / 2);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2 - 150, canvas.height);
+            ctx.lineTo(canvas.width / 2 - 50, canvas.height / 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2 + 150, canvas.height);
+            ctx.lineTo(canvas.width / 2 + 50, canvas.height / 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 3;
+            const segments = 10;
+            const centerX = canvas.width / 2;
+            for (let i = 0; i < segments; i++) {
+                if (i % 2 === 0) {
+                    const startY = canvas.height / 2 + (i / segments) * (canvas.height / 2);
+                    const endY = canvas.height / 2 + ((i + 0.5) / segments) * (canvas.height / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, startY);
+                    ctx.lineTo(centerX, endY);
+                    ctx.stroke();
+                }
+            }
+        }
+
+
+
+        // Função principal de atualização
+        function update() {
+            playerZ += speed;
+
+            envChangeTimer++;
+            if (envChangeTimer > envChangeDuration) {
+                currentEnv = (currentEnv + 1) % environments.length;
+                envChangeTimer = 0;
+            }
+
+            const env = environments[currentEnv];
+
+            drawRoad(env);
+            updateEnemyCars();
+            drawEnemyCars();
+            drawPlayerCar();
+            drawDashboard();
+
+            requestAnimationFrame(update);
+        }
+
+        // Desenha o painel inferior com informações
+        function drawDashboard() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+
+            ctx.fillStyle = '#FF8800';
+            ctx.font = '20px Courier New';
+            ctx.fillText(`SCORE: ${score}`, canvas.width / 2 - 50, canvas.height - 15);
+        }
+
+        // Inicia a animação
+        update();
+
+        // Redimensiona o canvas quando a janela é redimensionada
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Controles de teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                playerX -= 0.1;
+                if (playerX < -1) playerX = -1;
+            }
+            if (e.key === 'ArrowRight') {
+                playerX += 0.1;
+                if (playerX > 1) playerX = 1;
+            }
+            if (e.key === 'ArrowUp') {
+                speed += 5;
+                if (speed > maxSpeed) speed = maxSpeed;
+            }
+            if (e.key === 'ArrowDown') {
+                speed -= 5;
+                if (speed < 20) speed = 20;
+            }
+        });
+
+        // Gerar carros adversários a cada 2 segundos
+        setInterval(generateEnemyCar, 2000);
+
+        // Instruções para o usuário
+        const instructionsDiv = document.createElement('div');
+        instructionsDiv.style.position = 'absolute';
+        instructionsDiv.style.bottom = '10px';
+        instructionsDiv.style.left = '10px';
+        instructionsDiv.style.color = '#FFFFFF';
+        instructionsDiv.style.fontFamily = 'Courier New, monospace';
+        instructionsDiv.style.fontSize = '14px';
+        instructionsDiv.style.zIndex = '200';
+        instructionsDiv.innerHTML = 'Use as setas ← ↑ ↓ →  para mover o carro';
+        document.body.appendChild(instructionsDiv);
+    </script>
+</body>
+</html>
