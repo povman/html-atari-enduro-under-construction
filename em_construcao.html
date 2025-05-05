@@ -46,11 +46,6 @@
 <body>
     <div class="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div class="construction-container">
-            <h1>Página em Construção</h1>
-            <p>Estamos trabalhando em algo incrível!</p>
-            <p>Enquanto isso, aproveite esta animação retro inspirada no clássico Enduro da Atari</p>
-        </div>
     </div>
 
     <script>
@@ -71,6 +66,15 @@
         const maxSpeed = 200;
         let score = 0;
 
+        //aumenta a velocidade
+        setInterval(() => {
+    if (speed < maxSpeed) {
+        speed += 5; // Aumenta 5 unidades a cada 10s
+        console.log("Velocidade aumentada:", speed);
+    }
+}, 5000); // 10.000 ms = 10 segundos
+
+
         // Cores para diferentes ambientes
         const environments = [
             { name: 'day', roadColor: '#007000', rumbleColor: '#FFFFFF', bgColor: '#5050FF', mountainColor: '#FF7700' },
@@ -89,16 +93,19 @@
         const enemyCarHeight = 20;
 
         // Função para gerar carros adversários aleatoriamente
-    function generateEnemyCar() {
-        const laneOffsets = [-0.3, 0, 0.3]; // Deslocamentos laterais da pista
-        const lane = laneOffsets[Math.floor(Math.random() * laneOffsets.length)];
-        const enemyCar = {
-            lane,
-            z: 0, // Começa longe (no horizonte)
-            type: Math.floor(Math.random() * 3),
-        };
-        enemyCars.push(enemyCar);
-    }
+function generateEnemyCar() {
+    const laneOffsets = [-0.3, 0, 0.3];
+    const lane = laneOffsets[Math.floor(Math.random() * laneOffsets.length)];
+    const enemyCar = {
+        baseLane: lane,
+        z: 0,
+        type: Math.floor(Math.random() * 3),
+        amplitude: 0.2 + Math.random() * 0.2, // quanto ele se move lateralmente
+        frequency: 0.005 + Math.random() * 0.005, // velocidade do zigue-zague
+    };
+    enemyCars.push(enemyCar);
+}
+
 
 
 // Função genérica para desenhar qualquer carro (player ou inimigo)
@@ -148,45 +155,47 @@ function drawPlayerCar() {
     function updateEnemyCars() {
         for (let i = enemyCars.length - 1; i >= 0; i--) {
             enemyCars[i].z += speed * 0.05; // Aumenta o z para vir em direção ao jogador
-
             // Remover se passou do jogador (z > 2000)
             if (enemyCars[i].z > 2000) {
                 enemyCars.splice(i, 1);
-                score += 5; // Pontuação por evitar
+                score += 1; // Pontuação por evitar
+
             }
         }
     }
 
- function drawEnemyCars() {
-        enemyCars.forEach(car => {
-            const z = car.z;
-            // Quanto maior o z, mais perto do jogador (menor a perspectiva)
-            const perspective = 1 - (z / 5000);
-            const carWidth = enemyCarWidth / perspective;
-            const carHeight = enemyCarHeight / perspective;
-            const centerX = canvas.width / 2 + car.lane * 100; // Posição lateral fixa
+function drawEnemyCars() {
+    enemyCars.forEach(car => {
+        const z = car.z;
+        const perspective = 1 - (z / 5000);
+        const carWidth = enemyCarWidth / perspective;
+        const carHeight = enemyCarHeight / perspective;
+        const lateralOffset = car.amplitude * Math.sin(car.z * car.frequency);
+        const centerX = canvas.width / 2 + (car.baseLane + lateralOffset) * 100;
 
-            // Posição Y diminui conforme o carro se aproxima (vem de cima para baixo)
-            const screenY = canvas.height * 0.5 + (z / 2000) * (canvas.height * 0.7);
+        const screenY = canvas.height * 0.5 + (z / 2000) * (canvas.height * 0.7);
 
-            if (screenY < canvas.height && screenY > canvas.height * 0.2) {
-                ctx.fillStyle = car.type === 0 ? '#FF0000' : car.type === 1 ? '#00FF00' : '#0000FF';
-                ctx.fillRect(centerX - carWidth / 2, screenY - carHeight / 2, carWidth, carHeight);
+        if (screenY < canvas.height && screenY > canvas.height * 0.2) {
+            // Cores diferentes por tipo
+            const color = car.type === 0 ? '#FF0000' : car.type === 1 ? '#00FF00' : '#0000FF';
 
-                // Colisão simples com jogador
-                const playerY = canvas.height - 60;
-                const playerCenterX = canvas.width / 2 + playerX * 100;
-                if (
-                    screenY + carHeight / 2 > playerY &&
-                    screenY - carHeight / 2 < playerY + 20 &&
-                    Math.abs(centerX - playerCenterX) < (carWidth + 40) / 2
-                ) {
-                    score -= 5;
-                    car.z = 3000; // Move para longe para ser removido
-                }
-            }
-        });
-    }
+            drawCarEnemy(centerX - carWidth / 2, screenY - carHeight / 2, carWidth, carHeight, color);
+
+            // Detecção de colisão
+            const playerY = canvas.height - 60;
+            const playerCenterX = canvas.width / 2 + playerX * 100;
+            if (
+    screenY + carHeight / 2 > playerY &&
+    screenY - carHeight / 2 < playerY + 20 &&
+    Math.abs(centerX - playerCenterX) < (carWidth + 40) / 2
+) {
+    score = 0; // 🔁 Zera a pontuação
+    car.z = 3000; // Remove carro da colisão
+}
+        }
+    });
+}
+
 
 
         // Redesenha o cenário
@@ -196,6 +205,7 @@ function drawPlayerCar() {
 
             ctx.fillStyle = env.bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height / 2);
+
 
             ctx.font = "bold 40px 'Courier New', monospace";
             ctx.fillStyle = "#FFFF00";
@@ -254,6 +264,8 @@ function drawPlayerCar() {
 
 
 
+
+
         // Função principal de atualização
         function update() {
             playerZ += speed;
@@ -282,7 +294,7 @@ function drawPlayerCar() {
 
             ctx.fillStyle = '#FF8800';
             ctx.font = '20px Courier New';
-            ctx.fillText(`SCORE: ${score}`, canvas.width / 2 - 50, canvas.height - 15);
+            ctx.fillText(`SCORE: ${score} Velocidade ${speed}`, canvas.width / 2 - 50, canvas.height - 15);
         }
 
         // Inicia a animação
