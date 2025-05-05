@@ -126,18 +126,10 @@ git push origin feature/nova-feature
 📜 Licença
 MIT License © 2023 
 
-text
-Permissões:
-- Uso comercial
-- Modificação
-- Distribuição
-- Uso privado
 
 Limitações:
 - Sem garantia
 - Sem responsabilidade
 
-Condições:
-- Incluir nota de licença
-- Manter direitos autorais
+
 <div align="center"> Desenvolvido com ❤️ por <strong>Fabio Moraes</strong><br> 📧 fabiomoraes@sisdigial.com.br | 🌐 fabiomoraes.sisdigital.com.br </div> ```
