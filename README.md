@@ -79,6 +79,8 @@ open index.html
 
 # Linux
 xdg-open index.html
+
+
 📂 Estrutura do Código
 corrida-retro/
 ├── index.html          # Arquivo principal
