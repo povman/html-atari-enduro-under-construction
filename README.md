@@ -3,7 +3,6 @@
 # � Corrida Retro - Jogo Arcade
 
 <div align="center">
-  <img src="https://via.placeholder.com/800x400/000000/FFFFFF/?text=Corrida+Retro+Game" alt="Captura de Tela do Jogo">
   <p><em>Jogo de corrida estilo arcade desenvolvido com tecnologias web</em></p>
 </div>
 
