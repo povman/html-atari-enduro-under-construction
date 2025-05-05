@@ -81,16 +81,6 @@ open index.html
 xdg-open index.html
 
 
-
-📂 #Estrutura do Código
-corrida-retro/
-├── index.html          # Arquivo principal
-├── README.md           # Documentação
-├── assets/             # Diretório de assets
-│   ├── sounds/         # Efeitos sonoros
-│   ├── images/         # Imagens do jogo
-│   └── fonts/          # Fontes customizadas
-└── style.css           # Estilos adicionais
 🚀 Roadmap
 Versão Atual (0.1.0)
 Mecânica básica de movimento
@@ -150,4 +140,4 @@ Limitações:
 Condições:
 - Incluir nota de licença
 - Manter direitos autorais
-<div align="center"> Desenvolvido com ❤️ por <strong>Seu Nome</strong><br> 📧 contato@exemplo.com | 🌐 www.seusite.com </div> ```
+<div align="center"> Desenvolvido com ❤️ por <strong>Fabio Moraes</strong><br> 📧 fabiomoraes@sisdigial.com.br | 🌐 www.seusite.com </div> ```
